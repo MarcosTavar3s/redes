@@ -79,7 +79,7 @@ def envia_mensagem(sockclient):
 
         estacao = input("\nDigite o codigo da estacao desejada (ex: 001, 002, 003): ").strip()
         sockclient.send(f"{estacao}\r\n".encode("utf-8"))
-        print(f"Iniciando monitoramento da estacao {estacao}...\n")
+        print(f"Iniciando monitoramento...\n")
 
         while True:
             mensagem = input("")
