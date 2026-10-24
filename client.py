@@ -12,6 +12,24 @@ import sys              # sys (para argumentos na linha de comando)
 import threading
 import time
 
+estacao = None
+ciclos = 0
+dados = {"temp": None, "hum": None, "press": None}
+
+def trata_mensagem(mensagem):
+    # Remover os espacos vazios das mensagens
+    mensagem = mensagem.strip() 
+    param = mensagem.split(';')
+
+    if "TEMP" in mensagem:
+        dados["temp"] = float(param[1])
+    
+    if "HUM" in mensagem:
+            dados["hum"] = float(param[1])
+    
+    if "PRESS" in mensagem:
+            dados["press"] = float(param[1])    
+
 def ler_mensagem(sockclient):
     while True:
         try:
@@ -22,24 +40,60 @@ def ler_mensagem(sockclient):
                 # Fecha o socket localmente para forçar a saída da thread principal
                 sockclient.close()
                 break
-            print(f"\n{data}")
+
+            # Pegar os parametros dos dados recebidos
+            trata_mensagem(data)
+
+
+            if "BEGIN" in data:
+                # Extraindo o ciclos com a resposta do servidor                
+                ciclos = data.split(";")
+
+                # Fazendo com uma variavel auxiliar
+                # ciclos += 1
+        
+            if "END" in data:
+                print("-"*36)
+                print(f"ESTACAO {estacao} - CENTRO")
+                print("-"*36)
+                print(f"Ciclo: {ciclos[2]}\n")                
+                print(f"Temperatura  : {dados['temp']} C")
+                print(f"Umidade      : {dados['hum']} %")
+                print(f"Pressao      : {dados['hum']} hPA")
+                print("-"*36)
+                print("Aguardando novas medições...\n")
+
         except Exception:
                 break
 
 def envia_mensagem(sockclient):
-    while True:
-        try:
+    global estacao
+    try:
+        # Utilizado na etapa 1, 2 e 3
+        # listar = "LIST\r\n".encode("utf-8")
+        # sockclient.sendall(listar)
+        # time.sleep(0.5)
+
+        print("Estacoes disponiveis: 001, 002, 003")
+
+        while estacao not in ["001", "002", "003"]:
+            estacao = input("Selecione uma estacao: ")
+
+        print(f"\nIniciando monitoramento...")
+
+        sockclient.send(f"STREAM;{estacao}\r\n".encode("utf-8"))
+
+        while True:
             mensagem = input("")
-            mensagem +="\r\n"
 
             if sockclient.fileno() == -1:
                 break
 
+            mensagem += "\r\n"
             sockclient.send(mensagem.encode("utf-8"))
 
-        except Exception:
-            sockclient.close()
-            break
+    except Exception:
+        sockclient.close()
 
 # Definicao das variaveis
 serverName = '10.13.123.0'    # IP do servidor 
@@ -53,6 +107,8 @@ clientSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 try:
     # Conecta ao servidor
     clientSocket.connect((serverName, serverPort))
+    print(f"Conectado ao servidor TCP.\n")
+
     ler = threading.Thread(target=ler_mensagem, args=(clientSocket,))
     ler.daemon = True
     ler.start()
