@@ -65,8 +65,6 @@ def ler_mensagem(sockclient):
                 sockclient.close()
                 break
 
-            print(data)            
-
             # Acumula as informacoes para utilizar nos registros
             for i in data:
                 mensagem += i
