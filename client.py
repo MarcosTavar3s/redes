@@ -18,6 +18,7 @@ dados = {"temp": None, "hum": None, "press": None}
 
 def trata_mensagem(mensagem):
     global ciclos
+
     # Remover os espacos vazios das mensagens
     mensagem = mensagem.strip() 
     param = mensagem.split(';')
@@ -65,24 +66,19 @@ def ler_mensagem(sockclient):
                 sockclient.close()
                 break
 
-            # Acumula as informacoes para utilizar nos registros
+            # Acumula as mensagem
             for i in data:
+                # Se encontrar um \r, eh o inicio da terminacao, entao pode tratar a mensagen
+                if i=='\r':
+                    trata_mensagem(mensagem)
+                    mensagem =''
+                    continue
+                
+                # Se encontar um \n significa que a mensagem ja foi tratada, ir para o proxima
+                if i =="\n": 
+                    continue 
                 mensagem += i
 
-            divisao = mensagem.split('\r\n')
-            # Supondo que as linhas vem juntas
-            if len(divisao) > 1:
-                for linha in divisao:
-                    # Existem dois ; por linha
-                    if linha.count(";")==2: 
-                        trata_mensagem(linha)
-
-                        if linha == divisao[-1]:
-                            mensagem = ""
-                    
-                    # Linha incompleta
-                    else: 
-                        mensagem = linha
         except Exception:
                 break
 
