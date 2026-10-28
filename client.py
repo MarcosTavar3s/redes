@@ -17,20 +17,44 @@ ciclos = 0
 dados = {"temp": None, "hum": None, "press": None}
 
 def trata_mensagem(mensagem):
+    global ciclos
     # Remover os espacos vazios das mensagens
     mensagem = mensagem.strip() 
     param = mensagem.split(';')
 
+    if "BEGIN" in mensagem:
+        # Extraindo o ciclos com a resposta do servidor                
+        ciclos = param[2]
+
+
+        # Fazendo com uma variavel auxiliar
+        # ciclos += 1
+
+    if "END" in mensagem:
+        print("-"*36)
+        print(f"ESTACAO {estacao} - CENTRO")
+        print("-"*36)
+
+        print(f"Ciclo: {ciclos}\n")                
+        print(f"Temperatura  : {dados['temp']} C")
+        print(f"Umidade      : {dados['hum']} %")
+        print(f"Pressao      : {dados['press']} hPA")
+        print("-"*36)
+        print("Aguardando novas medições...\n")
+
+
     if "TEMP" in mensagem:
         dados["temp"] = float(param[1])
-    
+        
     if "HUM" in mensagem:
-            dados["hum"] = float(param[1])
+        dados["hum"] = float(param[1])
     
     if "PRESS" in mensagem:
-            dados["press"] = float(param[1])    
+        dados["press"] = float(param[1])    
+
 
 def ler_mensagem(sockclient):
+    mensagem = ""
     while True:
         try:
             data = sockclient.recv(1024).decode('utf-8')
@@ -41,28 +65,26 @@ def ler_mensagem(sockclient):
                 sockclient.close()
                 break
 
-            # Pegar os parametros dos dados recebidos
-            trata_mensagem(data)
+            print(data)            
 
+            # Acumula as informacoes para utilizar nos registros
+            for i in data:
+                mensagem += i
 
-            if "BEGIN" in data:
-                # Extraindo o ciclos com a resposta do servidor                
-                ciclos = data.split(";")
+            divisao = mensagem.split('\r\n')
+            # Supondo que as linhas vem juntas
+            if len(divisao) > 1:
+                for linha in divisao:
+                    # Existem dois ; por linha
+                    if linha.count(";")==2: 
+                        trata_mensagem(linha)
 
-                # Fazendo com uma variavel auxiliar
-                # ciclos += 1
-        
-            if "END" in data:
-                print("-"*36)
-                print(f"ESTACAO {estacao} - CENTRO")
-                print("-"*36)
-                print(f"Ciclo: {ciclos[2]}\n")                
-                print(f"Temperatura  : {dados['temp']} C")
-                print(f"Umidade      : {dados['hum']} %")
-                print(f"Pressao      : {dados['hum']} hPA")
-                print("-"*36)
-                print("Aguardando novas medições...\n")
-
+                        if linha == divisao[-1]:
+                            mensagem = ""
+                    
+                    # Linha incompleta
+                    else: 
+                        mensagem = linha
         except Exception:
                 break
 
